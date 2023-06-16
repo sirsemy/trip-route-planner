@@ -1,7 +1,6 @@
 <?php
 
-use App\Http\Controllers\DateCalculateController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\RoutePlanController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,4 +14,4 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/route_plan', [DateCalculateController::class, 'CalculateTaskFinishDateTime']);
+Route::get('/route_plan', [RoutePlanController::class, 'composeRoutePlan']);
