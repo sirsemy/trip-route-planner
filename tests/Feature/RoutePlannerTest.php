@@ -92,6 +92,126 @@ class RoutePlannerTest extends TestCase
         )->assertStatus(200);
     }
 
+    /**
+     * @return void
+     * @see RoutePlanController::composeRoutePlan()
+     *
+     * GET /route_plan
+     */
+    public function test_planner_response_proper_values(): void
+    {
+        $successValues = [
+            'simple' => [
+                'input' => [
+                    'first' => 0,
+                    'second' => 0,
+                    'third' => 0,
+                ],
+                'output' => [
+                    0 => 'first',
+                    1 => 'second',
+                    2 => 'third',
+                ],
+            ],
+            'oneToBePlan' => [
+                'input' => [
+                    'first' => 0,
+                    'second' => 'third',
+                    'third' => 0,
+                ],
+                'output' => [
+                    0 => 'first',
+                    1 => 'third',
+                    2 => 'second',
+                ],
+            ],
+            'multipleToBePlan' => [
+                'input' => [
+                    'first' => 0,
+                    'second' => 'third',
+                    'third' => 'sixth',
+                    'fourth' => 'first',
+                    'fifth' => 'second',
+                    'sixth' => 0,
+                ],
+                'output' => [
+                     0 => 'first',
+                     1 => 'sixth',
+                     2 => 'third',
+                     3 => 'second',
+                     4 => 'fourth',
+                     5 => 'fifth',
+                ],
+            ],
+        ];
+
+        foreach ($successValues as $item) {
+            $q = $this->call(
+                'GET',
+                '/api/route_plan',
+                [
+                    'trips' => $item['input']
+                ]
+            );
+            $q->assertJson([
+                "data" => [
+                    'trip_sequence' => $item['output'],
+                ]
+            ]);
+        }
+    }
+
+    /**
+     * @return void
+     * @see RoutePlanController::composeRoutePlan()
+     *
+     * GET /route_plan
+     */
+//    public function test_planner_response_wrong_values(): void
+//    {
+//        $successValues = [
+//            'multipleToBePlan' => [
+//                'request' => [
+//                    'first' => 0,
+//                    'second' => 'third',
+//                    'third' => 'sixth',
+//                    'fourth' => 'first',
+//                    'fifth' => 'second',
+//                    'sixth' => 0,
+//                ],
+//                'response' => [
+//                     0 => 'first',
+//                     1 => 'sixth',
+//                     2 => 'third',
+//                     3 => 'second',
+//                     4 => 'fourth',
+//                     5 => 'fifth',
+//                ],
+//            ],
+//        ];
+//
+//        foreach ($successValues as $item) {
+//            $q = $this->call(
+//                'GET',
+//                '/api/route_plan',
+//                [
+//                    'trips' => $item['request']
+//                ]
+//            );
+//            $q->assertJsonStructure([
+//                "data" => [
+//                    'trip_sequence' => $item['response'],
+//                ]
+//            ]);
+//        }
+//    }
+
+    /**
+     * @return void
+     * @see RoutePlanController::composeRoutePlan()
+     *
+     * GET /route_plan
+     */
     public function test_trip_list_has_not_existent_station_dependence(): void
     {
         $failureValues = [
@@ -130,5 +250,32 @@ class RoutePlannerTest extends TestCase
         }
     }
 
+    /**
+     * @return void
+     * @see RoutePlanController::composeRoutePlan()
+     *
+     * GET /route_plan
+     */
+    public function test_trip_list_has_cross_dependent_stations(): void
+    {
+        $tripList = [
+            'first' => 0,
+            'second' => 0,
+            'third' => 'second',
+            'foo' => 'bar',
+            'bar' => 'foo',
+        ];
+        $message = "Cross-dependent travel route stations not allowed. These are: 'foo => bar', 'bar => foo'";
 
+
+        $this->call(
+            'GET',
+            '/api/route_plan',
+            [
+                'trips' => $tripList
+            ]
+        )->assertJson([
+            "error" => $message
+        ]);
+    }
 }
