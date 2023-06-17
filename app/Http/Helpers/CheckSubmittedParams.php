@@ -51,7 +51,29 @@ class CheckSubmittedParams
         if (!empty($falseDependence)) {
             $errorSupplement = implode(', ', $falseDependence);
 
-            throw new PlanningException($errorSupplement);
+            throw new PlanningException(ExceptionCases::StationNameNotExist, $errorSupplement);
+        }
+    }
+
+    /**
+     * @throws PlanningException
+     */
+    public function checkHaveCrossDependentStations(): void
+    {
+        $tripList = $this->routePlanContr->getTripList();
+
+        $crossDependents = [];
+
+        foreach ($tripList as $key => $value) {
+            if (key_exists($value, $tripList) && $tripList[$value] == $key) {
+                $crossDependents[] = "'$key => $value'";
+            }
+        }
+
+        if (!empty($crossDependents)) {
+            $errorSupplement = implode(', ', $crossDependents);
+
+            throw new PlanningException(ExceptionCases::CrossDependantStations, $errorSupplement);
         }
     }
 }

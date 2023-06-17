@@ -7,16 +7,21 @@ use Symfony\Component\HttpFoundation\Response as Response;
 
 class PlanningException extends Exception
 {
-    public function __construct(string $errorSupplement)
+    public function __construct(ExceptionCases $errorCase, string $errorSupplement)
     {
         parent::__construct();
 
-        $this->set422ErrorMessage($errorSupplement);
+        match ($errorCase) {
+            ExceptionCases::StationNameNotExist => $this->set422ErrorMessage(
+                "Route sequence criteria has not existent station name(s): " . $errorSupplement),
+            ExceptionCases::CrossDependantStations => $this->set422ErrorMessage(
+                "Cross-dependent travel route stations not allowed. These are: " . $errorSupplement),
+        };
     }
 
-    private function set422ErrorMessage(string $errorSupplement): void
+    private function set422ErrorMessage(string $errorMessage): void
     {
-        $this->message = "Route sequence criteria has not existent station name(s): " . $errorSupplement;
+        $this->message = $errorMessage;
         $this->code = Response::HTTP_UNPROCESSABLE_ENTITY;
     }
 }
