@@ -2,7 +2,7 @@
 
 Base route url is: http://localhost/api/route_plan
 
-## Test the application
+## Application testing
 
 You can run in docker environment for easier set up.
 
