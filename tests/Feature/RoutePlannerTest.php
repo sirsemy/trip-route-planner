@@ -143,6 +143,20 @@ class RoutePlannerTest extends TestCase
                      5 => 'sixth',
                 ],
             ],
+            'notFirstDependentFree' => [
+                'input' => [
+                    'second' => 'third',
+                    'third' => 'sixth',
+                    'fifth' => 'second',
+                    'sixth' => 0,
+                ],
+                'output' => [
+                    0 => 'sixth',
+                    1 => 'third',
+                    2 => 'second',
+                    3 => 'fifth',
+                ],
+            ],
         ];
 
         foreach ($successValues as $item) {
@@ -159,36 +173,6 @@ class RoutePlannerTest extends TestCase
                 ]
             ]);
         }
-    }
-
-    /**
-     * @return void
-     * @see RoutePlanController::composeRoutePlan()
-     *
-     * GET /route_plan
-     */
-    public function test_planner_fail_with_confusing_criteria(): void
-    {
-        $failingValues = [
-            'A' => 'I',
-            'B' => 'F',
-            'C' => 'E',
-            'D' => 'G',
-            'E' => 'A',
-            'F' => 'C',
-            'G' => 'E',
-            'H' => 'A',
-            'I' => 0,
-        ];
-
-        $q = $this->call(
-            'GET',
-            '/api/route_plan',
-            [
-                'trips' => $failingValues
-            ]
-        );
-        $q->assertBadRequest();
     }
 
     /**
@@ -255,5 +239,37 @@ class RoutePlannerTest extends TestCase
                 "error" => $item['message']
             ]);
         }
+    }
+
+    /**
+     * @return void
+     * @see RoutePlanController::composeRoutePlan()
+     *
+     * GET /route_plan
+     */
+    public function test_list_has_circular_dependent_stations(): void
+    {
+        $failingValues = [
+            'A' => 'H',
+            'B' => 'F',
+            'C' => 'D',
+            'D' => 'G',
+            'E' => 'A',
+            'F' => 'C',
+            'G' => 'I',
+            'H' => 'E',
+            'I' => 0,
+        ];
+        $message = 'Not should be circular dependent stations. Those are: H => A => E => H';
+
+        $this->call(
+            'GET',
+            '/api/route_plan',
+            [
+                'trips' => $failingValues
+            ]
+        )->assertJson([
+            "error" => $message,
+        ]);
     }
 }

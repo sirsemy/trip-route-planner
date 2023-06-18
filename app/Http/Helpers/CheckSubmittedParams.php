@@ -5,7 +5,6 @@ namespace App\Http\Helpers;
 use App\Exceptions\PlanningException;
 use App\Exceptions\ExceptionCases;
 use App\Http\Controllers\RoutePlanController;
-use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -84,23 +83,4 @@ class CheckSubmittedParams
             throw new PlanningException(ExceptionCases::MultipleBeforeStations, $errorSupplement);
         }
     }
-
-    /**
-     * @throws PlanningException
-     */
-    public function checkHasCircularDependentStations(): void
-    {
-        $tripList = $this->routePlanContr->getTripList();
-
-        $circularDependents = collect();
-
-
-
-        if ($circularDependents->isNotEmpty()) {
-            $errorSupplement = $circularDependents->implode($circularDependents, ' => ');
-
-            throw new PlanningException(ExceptionCases::CircularDependantStations, $errorSupplement);
-        }
-    }
-
 }

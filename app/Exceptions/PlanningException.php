@@ -15,7 +15,7 @@ class PlanningException extends Exception
             ExceptionCases::StationNameNotExist => $this->set422ErrorMessage(
                 "Route sequence criteria has not existent station name(s): " . $errorSupplement),
             ExceptionCases::CircularDependantStations => $this->set422ErrorMessage(
-                "Cross-dependent travel route stations not allowed. These are: " . $errorSupplement),
+                "Not should be circular dependent stations. Those are: " . $errorSupplement),
             ExceptionCases::MultipleBeforeStations => $this->set422ErrorMessage(
                 "Multiple before stations not allowed for one station. These are: " . $errorSupplement),
             ExceptionCases::MissingStarterStation => $this->set422ErrorMessage(

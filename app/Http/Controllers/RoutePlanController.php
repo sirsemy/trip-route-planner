@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\PlanningException;
 use App\Http\Helpers\CheckSubmittedParams;
+use App\Http\Helpers\TripLoopChecker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -35,7 +36,7 @@ class RoutePlanController extends Controller
         $paramsChecker->checkTripListHasNotExistentDependence();
         $paramsChecker->checkHasStarterStation();
         $paramsChecker->checkHasMultipleBeforeStations();
-        $paramsChecker->checkHasCircularDependentStations();
+        (new TripLoopChecker($this))->checkHasCircularDependentStations();
 
         $this->plan();
 
@@ -48,21 +49,28 @@ class RoutePlanController extends Controller
     {
         $routs = collect($this->tripList);
 
+        $firstStation = $this->getFirstDependentFreeStation();
         $this->resultRoute = collect();
 
         foreach ($routs as $station => $beforeStat) {
-            $isStationInList = $this->resultRoute->search($beforeStat, true);
-            $isBeforeStatInList = $this->resultRoute->search($station, true);
-
-            if ($isBeforeStatInList && $isStationInList) {
+            if ($this->resultRoute->isEmpty()) {
+                $this->iterateBeforeStationsChain($firstStation, $routs);
+                unset($firstStation);
                 continue;
             }
 
-            if (!empty($beforeStat) && $isStationInList === false) {
+            $hasStationInList = $this->resultRoute->search($beforeStat, true);
+            $hasBeforeStatInList = $this->resultRoute->search($station, true);
+
+            if ($hasBeforeStatInList && $hasStationInList) {
+                continue;
+            }
+
+            if (!empty($beforeStat) && $hasStationInList === false) {
                 $this->resultRoute->add($beforeStat);
             }
 
-            if ($isBeforeStatInList) {
+            if ($hasBeforeStatInList) {
                 continue;
             }
 
@@ -70,14 +78,21 @@ class RoutePlanController extends Controller
         }
     }
 
-    private function iterateBeforeStationsChain(int|string $nextStation, Collection $routs)
+    private function getFirstDependentFreeStation(): int|string
     {
-        $nextRoute = $routs->search($nextStation);
+        return $this->tripList->search(static function (int|string $value, int|string $key) {
+            return empty($value);
+        });
+    }
 
-        $this->resultRoute->add($nextStation);
+    private function iterateBeforeStationsChain(int|string $station, Collection $routs): void
+    {
+        $beforeStation = $routs->search($station);
 
-        if (!empty($nextRoute)) {
-            $this->iterateBeforeStationsChain($nextRoute, $routs);
+        $this->resultRoute->add($station);
+
+        if (!empty($beforeStation)) {
+            $this->iterateBeforeStationsChain($beforeStation, $routs);
         }
     }
 
