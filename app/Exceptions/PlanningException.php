@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\Response as Response;
 
 class PlanningException extends Exception
 {
-    public function __construct(ExceptionCases $errorCase, string $errorSupplement)
+    public function __construct(ExceptionCases $errorCase, string $errorSupplement = '')
     {
         parent::__construct();
 
@@ -17,8 +17,9 @@ class PlanningException extends Exception
             ExceptionCases::CircularDependantStations => $this->set422ErrorMessage(
                 "Cross-dependent travel route stations not allowed. These are: " . $errorSupplement),
             ExceptionCases::MultipleBeforeStations => $this->set422ErrorMessage(
-                "Multiple before stations not allowed for one station. These are: " . $errorSupplement
-            ),
+                "Multiple before stations not allowed for one station. These are: " . $errorSupplement),
+            ExceptionCases::MissingStarterStation => $this->set422ErrorMessage(
+                "Needs at least one starter station without dependent!")
         };
     }
 

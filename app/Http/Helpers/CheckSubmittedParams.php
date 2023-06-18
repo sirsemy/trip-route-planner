@@ -49,9 +49,23 @@ class CheckSubmittedParams
         }
 
         if ($falseDependence->isNotEmpty()) {
-            $errorSupplement = $falseDependence->implode($falseDependence, ', ');
+            $errorSupplement = $falseDependence->implode(', ');
 
             throw new PlanningException(ExceptionCases::StationNameNotExist, $errorSupplement);
+        }
+    }
+
+    /**
+     * @throws PlanningException
+     */
+    public function checkHasStarterStation(): void
+    {
+        $tripList = $this->routePlanContr->getTripList();
+
+        $starterStations = $tripList->search(0);
+
+        if (!$starterStations) {
+            throw new PlanningException(ExceptionCases::MissingStarterStation);
         }
     }
 

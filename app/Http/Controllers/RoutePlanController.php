@@ -33,6 +33,7 @@ class RoutePlanController extends Controller
         $this->tripList = collect($request->input('trips'));
 
         $paramsChecker->checkTripListHasNotExistentDependence();
+        $paramsChecker->checkHasStarterStation();
         $paramsChecker->checkHasMultipleBeforeStations();
         $paramsChecker->checkHasCircularDependentStations();
 
