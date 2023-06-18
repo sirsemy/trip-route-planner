@@ -6,16 +6,19 @@ use App\Exceptions\PlanningException;
 use App\Exceptions\ExceptionCases;
 use App\Http\Controllers\RoutePlanController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class CheckSubmittedParams
 {
     private RoutePlanController $routePlanContr;
+    private Collection $collectedErrors;
 
     public function __construct(RoutePlanController $rp)
     {
         $this->routePlanContr = $rp;
+        $this->collectedErrors = collect();
     }
 
     /**
@@ -39,19 +42,13 @@ class CheckSubmittedParams
     {
         $tripList = $this->routePlanContr->getTripList();
 
-        $falseDependence = collect();
-
         foreach ($tripList as $value) {
             if (!empty($value) && !$tripList->has($value)) {
-                $falseDependence->add($value);
+                $this->collectedErrors->add($value);
             }
         }
 
-        if ($falseDependence->isNotEmpty()) {
-            $errorSupplement = $falseDependence->implode(', ');
-
-            throw new PlanningException(ExceptionCases::StationNameNotExist, $errorSupplement);
-        }
+        $this->throwExceptionIfHaveWrongValues(ExceptionCases::StationNameNotExist);
     }
 
     /**
@@ -75,12 +72,22 @@ class CheckSubmittedParams
     {
         $tripList = $this->routePlanContr->getTripList();
 
-        $multipleStations = $tripList->duplicates()->whereNotNull()->filter(fn (int|string $value) => $value !== 0);
+        $this->collectedErrors = $tripList->duplicates()->whereNotNull()
+            ->filter(fn (int|string $value) => $value !== 0);
 
-        if ($multipleStations->isNotEmpty()) {
-            $errorSupplement = $multipleStations->implode( ', ');
+        $this->throwExceptionIfHaveWrongValues(ExceptionCases::MultipleBeforeStations);
+    }
 
-            throw new PlanningException(ExceptionCases::MultipleBeforeStations, $errorSupplement);
+    /**
+     * @throws PlanningException
+     */
+    private function throwExceptionIfHaveWrongValues(ExceptionCases $errorCase): void
+    {
+        if ($this->collectedErrors->isNotEmpty()) {
+            $errorSupplement = $this->collectedErrors->implode( ', ');
+            $this->collectedErrors = collect();
+
+            throw new PlanningException($errorCase, $errorSupplement);
         }
     }
 }

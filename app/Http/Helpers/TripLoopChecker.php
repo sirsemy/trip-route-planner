@@ -38,7 +38,7 @@ class TripLoopChecker
             $this->firstStation = $beforeStat;
 
             $this->circularDependents->add($beforeStat);
-            $this->hasTripListLoopDependencies($station);
+            $this->checkTripListDependenciesLoop($station);
 
             if ($this->hasLoop) {
                 break;
@@ -47,14 +47,10 @@ class TripLoopChecker
             $this->circularDependents = collect();
         }
 
-        if ($this->circularDependents->isNotEmpty()) {
-            $errorSupplement = $this->circularDependents->implode(' => ');
-
-            throw new PlanningException(ExceptionCases::CircularDependantStations, $errorSupplement);
-        }
+        $this->throwExceptionIfHasLoop();
     }
 
-    private function hasTripListLoopDependencies(int|string $station): void
+    private function checkTripListDependenciesLoop(int|string $station): void
     {
         $beforeStation = $this->tripList->search($station);
 
@@ -64,7 +60,19 @@ class TripLoopChecker
             $this->hasLoop = true;
         } elseif (!empty($beforeStation)) {
             $this->circularDependents->add($station);
-            $this->hasTripListLoopDependencies($beforeStation);
+            $this->checkTripListDependenciesLoop($beforeStation);
+        }
+    }
+
+    /**
+     * @throws PlanningException
+     */
+    private function throwExceptionIfHasLoop(): void
+    {
+        if ($this->circularDependents->isNotEmpty()) {
+            $errorSupplement = $this->circularDependents->implode(' => ');
+
+            throw new PlanningException(ExceptionCases::CircularDependantStations, $errorSupplement);
         }
     }
 }
