@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\PlanningException;
+use App\Http\Executors\PlanTravelRoute;
 use App\Http\Helpers\CheckSubmittedParams;
 use App\Http\Helpers\TripLoopChecker;
 use Illuminate\Http\JsonResponse;
@@ -40,62 +41,11 @@ class RoutePlanController extends Controller
 
         (new TripLoopChecker($this))->checkHasCircularDependentStations();
 
-        $this->plan();
+        (new PlanTravelRoute($this))->plan();
 
         $this->composeSuccessResponse();
 
         return $this->routeResponse;
-    }
-
-    private function plan()
-    {
-        $routs = collect($this->tripList);
-
-        $firstStation = $this->getFirstDependentFreeStation();
-        $this->resultRoute = collect();
-
-        foreach ($routs as $station => $beforeStat) {
-            if ($this->resultRoute->isEmpty()) {
-                $this->iterateBeforeStationsChain($firstStation, $routs);
-                unset($firstStation);
-                continue;
-            }
-
-            $hasStationInList = $this->resultRoute->search($beforeStat, true);
-            $hasBeforeStatInList = $this->resultRoute->search($station, true);
-
-            if ($hasBeforeStatInList && $hasStationInList) {
-                continue;
-            }
-
-            if (!empty($beforeStat) && $hasStationInList === false) {
-                $this->resultRoute->add($beforeStat);
-            }
-
-            if ($hasBeforeStatInList) {
-                continue;
-            }
-
-            $this->iterateBeforeStationsChain($station, $routs);
-        }
-    }
-
-    private function getFirstDependentFreeStation(): int|string
-    {
-        return $this->tripList->search(static function (int|string $value, int|string $key) {
-            return empty($value);
-        });
-    }
-
-    private function iterateBeforeStationsChain(int|string $station, Collection $routs): void
-    {
-        $beforeStation = $routs->search($station);
-
-        $this->resultRoute->add($station);
-
-        if (!empty($beforeStation)) {
-            $this->iterateBeforeStationsChain($beforeStation, $routs);
-        }
     }
 
     private function composeSuccessResponse(): void
@@ -113,5 +63,13 @@ class RoutePlanController extends Controller
     public function getTripList(): Collection
     {
         return $this->tripList;
+    }
+
+    /**
+     * @param Collection $resultRoute
+     */
+    public function setResultRoute(Collection $resultRoute): void
+    {
+        $this->resultRoute = $resultRoute;
     }
 }
