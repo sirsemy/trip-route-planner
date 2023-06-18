@@ -58,7 +58,7 @@ class CheckSubmittedParams
     /**
      * @throws PlanningException
      */
-    public function checkHaveCrossDependentStations(): void
+    public function checkHasCrossDependentStations(): void
     {
         $tripList = $this->routePlanContr->getTripList();
 
@@ -75,5 +75,10 @@ class CheckSubmittedParams
 
             throw new PlanningException(ExceptionCases::CrossDependantStations, $errorSupplement);
         }
+    }
+
+    public function checkHasLoopDependentStations()
+    {
+
     }
 }

@@ -21,7 +21,7 @@ RUN apt-get update && \
     libonig-dev \
     libzip-dev
 
-RUN apt-get install -y gnupg gosu curl ca-certificates zip unzip git supervisor sqlite3 libcap2-bin libpng-dev python2
+RUN apt-get install -y gnupg gosu curl ca-certificates zip unzip git supervisor sqlite3 libcap2-bin libpng-dev python3
 
 # install PHP extensions
 RUN docker-php-ext-install \

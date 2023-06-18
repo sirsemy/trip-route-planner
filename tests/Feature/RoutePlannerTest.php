@@ -117,7 +117,7 @@ class RoutePlannerTest extends TestCase
                 'input' => [
                     'first' => 0,
                     'second' => 'third',
-                    'third' => 0,
+                    'third' => 'first',
                 ],
                 'output' => [
                     0 => 'first',
@@ -136,11 +136,11 @@ class RoutePlannerTest extends TestCase
                 ],
                 'output' => [
                      0 => 'first',
-                     1 => 'sixth',
+                     1 => 'fourth',
                      2 => 'third',
                      3 => 'second',
-                     4 => 'fourth',
-                     5 => 'fifth',
+                     4 => 'fifth',
+                     5 => 'sixth',
                 ],
             ],
         ];
@@ -167,44 +167,29 @@ class RoutePlannerTest extends TestCase
      *
      * GET /route_plan
      */
-//    public function test_planner_response_wrong_values(): void
-//    {
-//        $successValues = [
-//            'multipleToBePlan' => [
-//                'request' => [
-//                    'first' => 0,
-//                    'second' => 'third',
-//                    'third' => 'sixth',
-//                    'fourth' => 'first',
-//                    'fifth' => 'second',
-//                    'sixth' => 0,
-//                ],
-//                'response' => [
-//                     0 => 'first',
-//                     1 => 'sixth',
-//                     2 => 'third',
-//                     3 => 'second',
-//                     4 => 'fourth',
-//                     5 => 'fifth',
-//                ],
-//            ],
-//        ];
-//
-//        foreach ($successValues as $item) {
-//            $q = $this->call(
-//                'GET',
-//                '/api/route_plan',
-//                [
-//                    'trips' => $item['request']
-//                ]
-//            );
-//            $q->assertJsonStructure([
-//                "data" => [
-//                    'trip_sequence' => $item['response'],
-//                ]
-//            ]);
-//        }
-//    }
+    public function test_planner_fail_with_confusing_criteria(): void
+    {
+        $failingValues = [
+            'A' => 'I',
+            'B' => 'F',
+            'C' => 'E',
+            'D' => 'G',
+            'E' => 'A',
+            'F' => 'C',
+            'G' => 'E',
+            'H' => 'A',
+            'I' => 0,
+        ];
+
+        $q = $this->call(
+            'GET',
+            '/api/route_plan',
+            [
+                'trips' => $failingValues
+            ]
+        );
+        $q->assertBadRequest();
+    }
 
     /**
      * @return void

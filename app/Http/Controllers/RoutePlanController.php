@@ -6,6 +6,7 @@ use App\Exceptions\PlanningException;
 use App\Http\Helpers\CheckSubmittedParams;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -14,7 +15,8 @@ class RoutePlanController extends Controller
     private JsonResponse $routeResponse;
 
     private array $tripList;
-    private array $resultRoute;
+    private Collection $resultRoute;
+//    private array $resultRoute;
 
     /**
      * @Route("/route_plan", methods={"GET"})
@@ -32,7 +34,7 @@ class RoutePlanController extends Controller
         $this->tripList = $request->input('trips');
 
         $paramsChecker->checkTripListHasNotExistentDependence();
-        $paramsChecker->checkHaveCrossDependentStations();
+        $paramsChecker->checkHasCrossDependentStations();
 
         $this->plan();
 
@@ -43,37 +45,39 @@ class RoutePlanController extends Controller
 
     private function plan()
     {
-        $tripStationKeys = array_keys($this->tripList);
+        $routs = collect($this->tripList);
 
-        foreach ($this->tripList as $station => $beforeStat) {
-            if (empty($beforeStat)) {
-                $this->resultRoute[$station] = $beforeStat - 1;
+        $this->resultRoute = new Collection();
+
+        foreach ($routs as $station => $beforeStat) {
+            $isStationInList = $this->resultRoute->search($beforeStat, true);
+            $isBeforeStatInList = $this->resultRoute->search($station, true);
+
+            if ($isBeforeStatInList && $isStationInList) {
                 continue;
-            } elseif (!key_exists($beforeStat, $this->resultRoute) && !key_exists($station, $this->resultRoute)) {
-                $this->resultRoute[$beforeStat] = $this->getSpecifiedIndexNumber($tripStationKeys, $station) - 1;
-            } elseif (key_exists($station, $this->resultRoute) &&
-                $this->resultRoute[$station] < $this->getSpecifiedIndexNumber($tripStationKeys, $beforeStat)
-            ) {
-                $this->resultRoute[$beforeStat] = $this->resultRoute[$station] - 1;
             }
 
-            if (!key_exists($station, $this->resultRoute)) {
-                $this->resultRoute[$station] = $this->getSpecifiedIndexNumber($tripStationKeys, $station);
+            if (!empty($beforeStat) && $isStationInList === false) {
+                $this->resultRoute->add($beforeStat);
             }
+
+            if ($isBeforeStatInList) {
+                continue;
+            }
+
+            $this->iterateBeforeStationsChain($station, $routs);
         }
-
-        asort($this->resultRoute);
-        $this->resultRoute = array_keys($this->resultRoute);
     }
 
-    private function getSpecifiedIndexNumber(array $filterable, int|string $searchable): int
+    private function iterateBeforeStationsChain(int|string $nextStation, Collection $routs)
     {
-        $oneElement = array_filter($filterable,
-            static function(int|string $value) use ($searchable) {
-                return $value === $searchable;
-            });
+        $nextRoute = $routs->search($nextStation);
 
-        return array_key_first($oneElement);
+        $this->resultRoute->add($nextStation);
+
+        if (!empty($nextRoute)) {
+            $this->iterateBeforeStationsChain($nextRoute, $routs);
+        }
     }
 
     private function composeSuccessResponse(): void
