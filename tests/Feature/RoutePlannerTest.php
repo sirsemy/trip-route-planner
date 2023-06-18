@@ -28,7 +28,7 @@ class RoutePlannerTest extends TestCase
      *
      * GET /route_plan
      */
-    public function test_wrong_parameter(): void
+    public function test_wrong_parameter_structure(): void
     {
         $maxStations = config('params.station_limit');
 
@@ -197,10 +197,10 @@ class RoutePlannerTest extends TestCase
      *
      * GET /route_plan
      */
-    public function test_trip_list_has_not_existent_station_dependence(): void
+    public function test_trip_list_has_wrong_values(): void
     {
         $failureValues = [
-            'oneWrongName' => [
+            'oneNotexistentName' => [
                 'tripList' => [
                     'first' => 0,
                     'second' => 0,
@@ -210,7 +210,7 @@ class RoutePlannerTest extends TestCase
                 ],
                 'message' => "Route sequence criteria has not existent station name(s): foo"
             ],
-            'moreWrongNames' => [
+            'moreNotexistentNames' => [
                 'tripList' => [
                     'first' => 0,
                     'second' => 0,
@@ -219,7 +219,29 @@ class RoutePlannerTest extends TestCase
                     'fifth' => 'bar',
                 ],
                 'message' => "Route sequence criteria has not existent station name(s): foo, bar"
-            ]
+            ],
+            'multipleBeforeStations' => [
+                'tripList' => [
+                    'first' => 0,
+                    'second' => 0,
+                    'third' => 'first',
+                    'foo' => 'bar',
+                    'bar' => 'first',
+                    'fourth' => 0,
+                    'sixth' => 'bar',
+                    'seventh' => 0,
+                ],
+                'message' => "Multiple before stations not allowed for one station. These are: first, bar",
+            ],
+            'missingStarterStation' => [
+                'tripList' => [
+                    'third' => 'foo',
+                    'foo' => 'bar',
+                    'bar' => 'sixth',
+                    'sixth' => 'third',
+                ],
+                'message' => 'Needs at least one starter station without dependent!',
+            ],
         ];
 
         foreach ($failureValues as $item) {
@@ -233,34 +255,5 @@ class RoutePlannerTest extends TestCase
                 "error" => $item['message']
             ]);
         }
-    }
-
-    /**
-     * @return void
-     * @see RoutePlanController::composeRoutePlan()
-     *
-     * GET /route_plan
-     */
-    public function test_trip_list_has_cross_dependent_stations(): void
-    {
-        $tripList = [
-            'first' => 0,
-            'second' => 0,
-            'third' => 'second',
-            'foo' => 'bar',
-            'bar' => 'foo',
-        ];
-        $message = "Cross-dependent travel route stations not allowed. These are: 'foo => bar', 'bar => foo'";
-
-
-        $this->call(
-            'GET',
-            '/api/route_plan',
-            [
-                'trips' => $tripList
-            ]
-        )->assertJson([
-            "error" => $message
-        ]);
     }
 }

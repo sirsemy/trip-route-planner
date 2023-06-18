@@ -40,16 +40,16 @@ class CheckSubmittedParams
     {
         $tripList = $this->routePlanContr->getTripList();
 
-        $falseDependence = [];
+        $falseDependence = collect();
 
         foreach ($tripList as $value) {
-            if (!empty($value) && !array_key_exists($value, $tripList)) {
-                $falseDependence[] = $value;
+            if (!empty($value) && !$tripList->has($value)) {
+                $falseDependence->add($value);
             }
         }
 
-        if (!empty($falseDependence)) {
-            $errorSupplement = implode(', ', $falseDependence);
+        if ($falseDependence->isNotEmpty()) {
+            $errorSupplement = $falseDependence->implode($falseDependence, ', ');
 
             throw new PlanningException(ExceptionCases::StationNameNotExist, $errorSupplement);
         }
@@ -58,27 +58,35 @@ class CheckSubmittedParams
     /**
      * @throws PlanningException
      */
-    public function checkHasCrossDependentStations(): void
+    public function checkHasMultipleBeforeStations(): void
     {
         $tripList = $this->routePlanContr->getTripList();
 
-        $crossDependents = [];
+        $multipleStations = $tripList->duplicates()->whereNotNull()->filter(fn (int|string $value) => $value !== 0);
 
-        foreach ($tripList as $key => $value) {
-            if (key_exists($value, $tripList) && $tripList[$value] == $key) {
-                $crossDependents[] = "'$key => $value'";
-            }
-        }
+        if ($multipleStations->isNotEmpty()) {
+            $errorSupplement = $multipleStations->implode( ', ');
 
-        if (!empty($crossDependents)) {
-            $errorSupplement = implode(', ', $crossDependents);
-
-            throw new PlanningException(ExceptionCases::CrossDependantStations, $errorSupplement);
+            throw new PlanningException(ExceptionCases::MultipleBeforeStations, $errorSupplement);
         }
     }
 
-    public function checkHasLoopDependentStations()
+    /**
+     * @throws PlanningException
+     */
+    public function checkHasCircularDependentStations(): void
     {
+        $tripList = $this->routePlanContr->getTripList();
 
+        $circularDependents = collect();
+
+
+
+        if ($circularDependents->isNotEmpty()) {
+            $errorSupplement = $circularDependents->implode($circularDependents, ' => ');
+
+            throw new PlanningException(ExceptionCases::CircularDependantStations, $errorSupplement);
+        }
     }
+
 }

@@ -14,9 +14,8 @@ class RoutePlanController extends Controller
 {
     private JsonResponse $routeResponse;
 
-    private array $tripList;
+    private Collection $tripList;
     private Collection $resultRoute;
-//    private array $resultRoute;
 
     /**
      * @Route("/route_plan", methods={"GET"})
@@ -31,10 +30,11 @@ class RoutePlanController extends Controller
 
         $paramsChecker->validateParameters($request);
 
-        $this->tripList = $request->input('trips');
+        $this->tripList = collect($request->input('trips'));
 
         $paramsChecker->checkTripListHasNotExistentDependence();
-        $paramsChecker->checkHasCrossDependentStations();
+        $paramsChecker->checkHasMultipleBeforeStations();
+        $paramsChecker->checkHasCircularDependentStations();
 
         $this->plan();
 
@@ -47,7 +47,7 @@ class RoutePlanController extends Controller
     {
         $routs = collect($this->tripList);
 
-        $this->resultRoute = new Collection();
+        $this->resultRoute = collect();
 
         foreach ($routs as $station => $beforeStat) {
             $isStationInList = $this->resultRoute->search($beforeStat, true);
@@ -90,9 +90,9 @@ class RoutePlanController extends Controller
     }
 
     /**
-     * @return array
+     * @return Collection
      */
-    public function getTripList(): array
+    public function getTripList(): Collection
     {
         return $this->tripList;
     }
